@@ -13,8 +13,10 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.ProtocolException;
+import java.net.MalformedURLException;
+import java.net.URL;
 
-public class HttpService extends IntentService {
+public class HttpService extends IntentService  {
     public static final int GAMES_LIST = 1;
     public static final int IN_ROW = 2;
     public static final int REFRESH = 3;
@@ -39,8 +41,18 @@ public class HttpService extends IntentService {
     @Override
     protected void onHandleIntent( @Nullable Intent intent ) {
         String urlstr = intent.getStringExtra(HttpService.URL);
-        URL url = new URL(urlstr);
-        HttpURLConnection conn = (HttpURLConnection ) url.openConnection();
+        URL url = null;
+        try {
+            url = new URL(urlstr);
+        } catch ( MalformedURLException e ) {
+            e.printStackTrace();
+        }
+        HttpURLConnection conn = null;
+        try {
+            conn = (HttpURLConnection ) url.openConnection();
+        } catch ( IOException e ) {
+            e.printStackTrace();
+        }
 
         switch (intent.getIntExtra(HttpService.METHOD,1)) {
             case HttpService.POST:

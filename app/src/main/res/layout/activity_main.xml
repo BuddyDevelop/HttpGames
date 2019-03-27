@@ -7,7 +7,7 @@
     tools:context="com.example.grzeiek.komunikacjahttp.MainActivity">
 
     <Button
-        android:id="@+id/button"
+        android:id="@+id/ticTac"
         android:layout_width="355dp"
         android:layout_height="205dp"
         android:layout_marginEnd="8dp"
@@ -20,7 +20,7 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <Button
-        android:id="@+id/button2"
+        android:id="@+id/inRow"
         android:layout_width="355dp"
         android:layout_height="205dp"
         android:layout_marginBottom="8dp"
