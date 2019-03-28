@@ -31,7 +31,8 @@ public class Config extends SQLiteOpenHelper {
     @Override public void onCreate(SQLiteDatabase database) {
         String DATABASE_CREATE = "create table config " +
                 "(_id integer primary key autoincrement," +
-                "privKey blob not null," + "pubKey string not null);";
+                "privKey blob not null," +
+                "pubKey string not null);";
         database.execSQL( DATABASE_CREATE );
         addKeys( database );
     }
@@ -67,7 +68,8 @@ public class Config extends SQLiteOpenHelper {
         try {
             SQLiteDatabase db = this.getReadableDatabase();
             Cursor cursor = db.query( "config", new String[]{ "pubKey", }, null, null, null, null, null, null );
-            if ( cursor != null ) cursor.moveToFirst();
+            if ( cursor != null )
+                cursor.moveToFirst();
             db.close();
             return cursor.getString( 0 );
         } catch ( Exception ex ) {

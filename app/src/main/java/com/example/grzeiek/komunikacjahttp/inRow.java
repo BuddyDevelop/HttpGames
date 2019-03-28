@@ -4,6 +4,7 @@ import android.app.PendingIntent;
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -43,12 +44,16 @@ public class inRow extends AppCompatActivity {
 //        zainicjalizuj zmienne prywatne i uruchom komunikat początkowy
         status=getIntent().getIntExtra(inRow.STATUS, inRow.NEW_GAME);
         game_id=getIntent().getIntExtra(inRow.GAME_ID, inRow.NEW_GAME);
-        moves = getIntent().getStringExtra(inRow.MOVES);
-        player=getIntent().getIntExtra(inRow.PLAYER, 1);hints(status);
+        player=getIntent().getIntExtra(inRow.PLAYER, 1);
+        hints(status);
+
 
 
 //        Utwórz i przypisz adapter inRowBoard do gridView
         GridView gv=( GridView )findViewById(R.id.gridView);
+
+        moves = getIntent().getStringExtra(inRow.MOVES);
+
         gv.setAdapter(new inRowBoard(this,moves));
 
 
@@ -58,9 +63,11 @@ public class inRow extends AppCompatActivity {
             public void onItemClick( AdapterView<?> arg0, View arg1, int arg2, long arg3 ) {
                 if ( status != inRow.WAIT ) { //Sprawdź, czy użytkownik może wykonać ruch
                     status = inRow.WAIT;
+
                     hints( inRow.CONNECTION );
                     GridView gv = ( GridView ) findViewById( R.id.gridView );
                     inRowBoard game = ( inRowBoard ) gv.getAdapter(); //Pobierz adapter inRowBoard z gridView (czyli aktywną grę)
+
                     if ( game.add( arg3 ) != null )  //Spróbuj wykonać ruch
                         gv.setAdapter( game );  //Jeżeli ruch się wykona ponownie ustaw adapter do gridView
                     else
@@ -68,6 +75,7 @@ public class inRow extends AppCompatActivity {
 
                     Intent intencja = new Intent( getApplicationContext(), HttpService.class ); //Stwórz intencję dla usługi HTTPService
                     PendingIntent pendingResult = createPendingResult( HttpService.IN_ROW, new Intent(), 0 ); //Utwórz PendingIntent jako intencję do odbioru wyniku działania usługi
+
                     if ( game_id == inRow.NEW_GAME ) {
                         intencja.putExtra( HttpService.URL, HttpService.LINES );  //Jeżeli użytkownik tworzy nową grę, ustaw w intencji Extras „URL” jako „LINES”
                         intencja.putExtra( HttpService.METHOD, HttpService.POST ); //„METHOD” jako „POST”
@@ -75,7 +83,9 @@ public class inRow extends AppCompatActivity {
                         intencja.putExtra( HttpService.URL, HttpService.LINES + game_id );  //Jeżeli gracz wykonuje ruch w istniejącej grze ustaw w intencji Extras „URL” jako „LINES”+game_id
                         intencja.putExtra( HttpService.METHOD, HttpService.PUT );                //„METHOD” jako „PUT”
                     }
+
                     intencja.putExtra( HttpService.PARAMS, "moves=" + moves + arg3 );  //Dodaj do intencji Extras „PARAMS” nową historię ruchów
+                    intencja.putExtra(HttpService.RETURN, pendingResult);
                     startService( intencja );   //Uruchom usługę
                 }
             }
@@ -87,68 +97,62 @@ public class inRow extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if ( requestCode == HttpService.IN_ROW ) {
-            JSONObject response = null;
             try {
-                response = new JSONObject( data.getStringExtra( HttpService.RESPONSE ) );
-            } catch ( JSONException e ) {
-                e.printStackTrace();
-            }
-
-            if (resultCode == 200) { //Sprawdź, czy nie wystąpił błąd
-                if(game_id==0)
-                    try {
+                JSONObject response = new JSONObject( data.getStringExtra( HttpService.RESPONSE ) );
+                if (resultCode == 200) { //Sprawdź, czy nie wystąpił błąd
+                    if(game_id==0)
                         game_id = response.getInt("game_id");  //Jeżeli wszystko OK pobierz game_id z obiektu JSON
-                    } catch ( JSONException e ) {
-                        e.printStackTrace();
+
+
+                    GridView gv = (GridView) findViewById(R.id.gridView);
+                    inRowBoard game = (inRowBoard)gv.getAdapter();
+
+                    int game_status = game.checkWin();  //Sprawdź, status gry
+
+                    if (game_status==0)
+                        hints(inRow.WAIT);
+                    else{
+                        if(game_status==player)
+                            hints(inRow.WIN);
+                        else
+                            hints(inRow.LOSE);
                     }
-
-                GridView gv = (GridView) findViewById(R.id.gridView);
-                inRowBoard game = (inRowBoard)gv.getAdapter();
-
-                int game_status = game.checkWin();  //Sprawdź, status gry
-                if (game_status==0)
-                    hints(inRow.WAIT);
-                else{
-                    if(game_status==player)
-                        hints(inRow.WIN);
-                    else
-                        hints(inRow.LOSE);
                 }
-            }
-            else {
-                if ( resultCode == 500 )
-                    hints( inRow.NETWORK_ERROR );
-                else
-                    hints( inRow.ERROR );
-            }
-            try {
-                Thread.sleep(5000);
-            } catch ( InterruptedException e ) {
+                else {
+                    if ( resultCode == 500 )
+                        hints( inRow.NETWORK_ERROR );
+                    else
+                        hints( inRow.ERROR );
+
+                    Log.d("DEBUG", response.getString("http_status"));
+                }
+
+                //set refresh after 5 sec
+                try {
+                    Thread.sleep( 5000 );
+                }catch ( Exception ex ){
+                    Log.d("inRow sleep err", ex.toString());
+                }
+                refresh(null);
+            } catch ( JSONException e ) {
+                hints(inRow.ERROR);
                 e.printStackTrace();
             }
-            refresh(null);
         }
         else if ( requestCode == HttpService.REFRESH ) {
-            JSONObject response = null;  //utwórz obiect JSONObject którzy sparsuje dane z intencji
             try {
-                response = new JSONObject( data.getStringExtra( HttpService.RESPONSE ) );
-            } catch ( JSONException e ) {
-                e.printStackTrace();
-            }
+                //utwórz obiect JSONObject którzy sparsuje dane z intencji
+                JSONObject response = new JSONObject( data.getStringExtra( HttpService.RESPONSE ) );
 
+                GridView gv = (GridView) findViewById(R.id.gridView);
 //          Pobierz z obiektu JSON pole „moves” (ruchy) i przypisz do zmiennej prywatnej
-            try {
                 moves = response.getString("moves");
-            } catch ( JSONException e ) {
-                e.printStackTrace();
-            }
-            GridView gv = (GridView) findViewById(R.id.gridView);
-            inRowBoard game = new inRowBoard(this,moves);
-            gv.setAdapter(game);
 
+                inRowBoard game = new inRowBoard(this,moves);
+
+                gv.setAdapter(game);
 
 //       Sprawdź, czy jest ruch gracza („status” odpowiedzi jest taki sam jak nr gracza).Jeżeli tak, sprawdź czy gracz wygrał, czy przegrał, jeżeli gra ciągle się toczy ustawstatus gry na inRow.YOUR_TURN i wyświetl odpowiedni kounikat
-            try {
                 if(response.getInt("status")==player){
                     if(game.checkWin()==player) {
                         hints(inRow.WIN);
@@ -164,11 +168,13 @@ public class inRow extends AppCompatActivity {
                 else {
                     try {
                         Thread.sleep( 5000 ); //Jeżeli nie jest ruch gracza odczekaj 5s i odśwież grę
-                    } catch ( InterruptedException e ) {
-                        e.printStackTrace();
+                    }catch ( Exception ex ){
+                        Log.d("inRow sleep err", ex.toString());
                     }
                     refresh( null );
                 }
+
+
             } catch ( JSONException e ) {
                 e.printStackTrace();
             }

@@ -1,6 +1,7 @@
 package com.example.grzeiek.komunikacjahttp;
 
 import android.content.Context;
+import android.support.constraint.Constraints;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
@@ -19,9 +20,11 @@ public class inRowBoard extends BaseAdapter{
 //    A. Rozbicie stringu z historią na poszczególne ruchy  B. Wykonanie kolejnych ruchów, kolejnych graczy
     public inRowBoard(Context cont, String moves) {
         context = cont;
+
         int mvs = 0;
         for ( String move : moves.split( "(?!^)" ) ) {
-            if ( move != "" ) this.move( Integer.parseInt( move ), mvs++ % 2 );
+            if ( move != "" )
+                this.move( Integer.parseInt( move ), mvs++ % 2 );
         }
 //        Ustal którym graczem jest aktywny użytkownik
         player = mvs % 2;
@@ -44,7 +47,8 @@ public class inRowBoard extends BaseAdapter{
 
 //    Utwórz publiczną metodę wykonania ruchu przez aktualnego gracza o nazwie add
     public inRowBoard add(long col) {
-        if ( this.move( ( int ) col, player ) )
+        //If change `player++%2` to `player` there is no switching between players
+        if ( this.move( ( int ) col, player++%2 ) )
             return this;
         return null;
     }
@@ -67,8 +71,11 @@ public class inRowBoard extends BaseAdapter{
     @Override
     public View getView( int position, View convertView, ViewGroup parent) {
         ImageView iv = new ImageView( context );
+
         int col = position % 7;
         int row = 5 - position / 7;
+
+        //Set appropriate image
         switch ( board[ row ][ col ] ) {
             case 0:
                 iv.setImageResource( R.drawable.circle );
@@ -80,6 +87,7 @@ public class inRowBoard extends BaseAdapter{
                 iv.setImageResource( R.drawable.player2 );
                 break;
         }
+//        iv.setLayoutParams( new Constraints.LayoutParams(  ) );
         iv.setLayoutParams( new LinearLayout.LayoutParams( 120, 120 ) );
         return iv;
     }
@@ -99,6 +107,9 @@ public class inRowBoard extends BaseAdapter{
                 }
         else
             inRow = 0;
+
+        //check cols
+
         for ( int col = 0; col < 7; col++, inRow = 0 )
             for ( int row = 0; row < 5; row++ )
                 if ( board[ row ][ col ] == board[ row + 1 ][ col ] ) {
@@ -106,7 +117,10 @@ public class inRowBoard extends BaseAdapter{
                     if ( inRow == 3 && board[ row ][ col ] != 0 )
                         return board[ row ][ col ];
                 }
-        else inRow = 0;
+                else
+                    inRow = 0;
+
+        //Chceck rising horizontal
         for ( int posx = 3; posx < 6; posx++ )
             for ( int posy = 0; posy < 4; posy++ ) {
                 inRow = 0;
@@ -119,6 +133,8 @@ public class inRowBoard extends BaseAdapter{
                 else
                     inRow = 0;
             }
+
+        //Chceck falling horizontal
         for ( int posx = 0; posx < 3; posx++ )
             for ( int posy = 0; posy < 4; posy++ ) {
                 inRow = 0;

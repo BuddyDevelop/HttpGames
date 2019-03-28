@@ -2,21 +2,17 @@ package com.example.grzeiek.komunikacjahttp;
 
 import android.app.IntentService;
 import android.app.PendingIntent;
-import android.app.Service;
 import android.content.Intent;
-import android.os.IBinder;
-import android.support.annotation.Nullable;
+import android.util.Log;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
-import java.net.ProtocolException;
-import java.net.MalformedURLException;
 import java.net.URL;
 
-public class HttpService extends IntentService  {
+public class HttpService extends IntentService {
+    //Constant variables as Flags
     public static final int GAMES_LIST = 1;
     public static final int IN_ROW = 2;
     public static final int REFRESH = 3;
@@ -32,123 +28,76 @@ public class HttpService extends IntentService  {
     public static final int POST = 2;
     public static final int PUT = 3;
 
-
-//    Utwórz konstruktor, który wywoła konstruktor rodzicielski (super) z jakąś wartością
+    //Create constructor
     public HttpService() {
+        //Parent Constructor
         super("HTTP calls handler");
     }
 
     @Override
-    protected void onHandleIntent( @Nullable Intent intent ) {
-        String urlstr = intent.getStringExtra(HttpService.URL);
-        URL url = null;
+    protected void onHandleIntent(Intent intent) {
         try {
-            url = new URL(urlstr);
-        } catch ( MalformedURLException e ) {
-            e.printStackTrace();
-        }
-        HttpURLConnection conn = null;
-        try {
-            conn = (HttpURLConnection ) url.openConnection();
-        } catch ( IOException e ) {
-            e.printStackTrace();
-        }
+            //Create url object from given string
+            String urlstr = intent.getStringExtra(HttpService.URL);
+            URL url = new URL(urlstr);
+            //Prepare connection
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
-        switch (intent.getIntExtra(HttpService.METHOD,1)) {
-            case HttpService.POST:
-                try {
-                    conn.setRequestMethod( "POST" );
-                } catch ( ProtocolException e ) {
-                    e.printStackTrace();
-                }
-                break;
-            case HttpService.PUT:
-                try {
-                    conn.setRequestMethod( "PUT" );
-                } catch ( ProtocolException e ) {
-                    e.printStackTrace();
-                }
-                break;
-            default:
-                try {
-                    conn.setRequestMethod( "GET" );
-                } catch ( ProtocolException e ) {
-                    e.printStackTrace();
-                }
-        }
-
-        Config conf = new Config(getApplicationContext());
-        conn.setRequestProperty("PKEY", conf.getPublic().replace("\n",""));
-        conn.setRequestProperty("SIGN",conf.sign(urlstr).replace("\n",""));
-
-        String params = intent.getStringExtra(HttpService.PARAMS);
-        if(params!=null) {
-            conn.setDoOutput( true );
-            OutputStreamWriter writer = null;
-            try {
-                writer = new OutputStreamWriter( conn.getOutputStream() );
-            } catch ( IOException e ) {
-                e.printStackTrace();
+            //set connection method
+            switch (intent.getIntExtra(HttpService.METHOD,1)){
+                case HttpService.POST:
+                    conn.setRequestMethod("POST");
+                    break;
+                case HttpService.PUT:
+                    conn.setRequestMethod("PUT");
+                    break;
+                default:
+                    conn.setRequestMethod("GET");
             }
-            try {
-                writer.write( params );
-            } catch ( IOException e ) {
-                e.printStackTrace();
-            }
-            try {
+            //Using RSA asynhronic sign for authorization request
+            Config conf = new Config(getApplicationContext());
+            conn.setRequestProperty("PKEY", conf.getPublic().replace("\n",""));
+            conn.setRequestProperty("SIGN", conf.sign(urlstr).replace("\n",""));
+
+            //Add parameters to request
+            String params = intent.getStringExtra(HttpService.PARAMS);
+            if(params!=null) {
+                conn.setDoOutput(true);
+                OutputStreamWriter writer = new OutputStreamWriter(conn.getOutputStream());
+                writer.write(params);
                 writer.flush();
-            } catch ( IOException e ) {
-                e.printStackTrace();
-            }
-            try {
                 writer.close();
-            } catch ( IOException e ) {
-                e.printStackTrace();
             }
-        }
-
-        try {
+            //send request
             conn.connect();
-        } catch ( IOException e ) {
-            e.printStackTrace();
-        }
 
-        int responseCode = 0;
-        try {
-            responseCode = conn.getResponseCode();
-        } catch ( IOException e ) {
-            e.printStackTrace();
-        }
-        BufferedReader reader = null;
-        try {
-            reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-        } catch ( IOException e ) {
-            e.printStackTrace();
-        }
+            //Getting HTTP responseCode
+            int responseCode = conn.getResponseCode();
 
-        String response = "";
-        String line;
-        try {
-            while ((line = reader.readLine()) != null) {
-                response += line;
+            //Geting response Body only when connection is OK
+            String response = "";
+            if(responseCode==200) {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+
+                //Convert response to single string
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    response += line;
+                }
+                reader.close();
             }
-        } catch ( IOException e ) {
-            e.printStackTrace();
-        }
-        try {
-            reader.close();
-        } catch ( IOException e ) {
-            e.printStackTrace();
-        }
-        conn.disconnect();
+            //Close connection
+            conn.disconnect();
 
-        Intent returns = new Intent();
-        returns.putExtra(HttpService.RESPONSE, response);
-        PendingIntent reply = intent.getParcelableExtra(HttpService.RETURN);
-        try {
+            //Add response to return intent
+            Intent returns = new Intent();
+            returns.putExtra(HttpService.RESPONSE, response);
+            PendingIntent reply = intent.getParcelableExtra(HttpService.RETURN);
             reply.send(this, responseCode, returns);
-        } catch ( PendingIntent.CanceledException e ) {
-            e.printStackTrace();
+
+        }catch (Exception ex){
+            //If connection error occured - show Exception message in logCat
+            Log.d("CONNERROR", ex.toString());
         }
     }
 }

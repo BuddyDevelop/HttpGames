@@ -7,7 +7,7 @@
     <string name="error">Ruch niemożliwy.\nSpróbuj ponownie.\n\n</string>
     <string name="connection">Trwa przesyłanie danych na serwer.\nPoczekaj chwilkę.\n\n</string>
     <string name="network_error">Wystąpił błąd z siecią.\nWróć do listy dostępnych gier.\n\n</string>
-    <string name="new_game">Rozpocznijnową grę.\nWybierz kolumnę by dodać swój krążek.\n\n</string>
+    <string name="new_game">Rozpocznij nową grę.\nWybierz kolumnę by dodać swój krążek.\n\n</string>
     <string name="empty_list">Niestety brak gier, w które mógłbyś zagrać.\nUtwórz nową!</string>
     <string name="win">Gratulacje, wygrałeś tą rozgrywkę.\nZagraj ponownie!</string>
     <string name="lose">Niestety, przegrałeś tą rozgrywkę.\nZagraj ponownie!</string>

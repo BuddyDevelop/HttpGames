@@ -42,6 +42,8 @@ public class GamesList extends AppCompatActivity {
             }
         } );
 
+        refreshGameList();
+
         FloatingActionButton fab = ( FloatingActionButton ) findViewById( R.id.fab );
 //        uruchomienie nowej gry po wcisnieciu przycisku
         fab.setOnClickListener( new View.OnClickListener() {
@@ -86,7 +88,9 @@ public class GamesList extends AppCompatActivity {
                 else{
                     //TODO -geting ticTacToe games list
                 }
-                intencja.putExtra(HttpService.METHOD, HttpService.GET);intencja.putExtra(HttpService.RETURN, pendingResult);startService(intencja);
+                intencja.putExtra(HttpService.METHOD, HttpService.GET);
+                intencja.putExtra(HttpService.RETURN, pendingResult);
+                startService(intencja);
             }
         } );
     }
@@ -96,7 +100,12 @@ public class GamesList extends AppCompatActivity {
     public void refreshGameList(){
         ProgressBar spinner = (ProgressBar)findViewById(R.id.progressBar1);
         spinner.setVisibility(View.VISIBLE);
-        Snackbar.make(findViewById(R.id.main_list), getString(R.string.refresh), Snackbar.LENGTH_SHORT).setAction("Action", null).show();
+        Snackbar.make(findViewById(R.id.main_list), getString(R.string.refresh), Snackbar.LENGTH_SHORT)
+                .setAction("Action", null).show();
+
+        //Geting Layout elements for modyfication
+        ListView list = (ListView)findViewById(R.id.listView);
+        TextView emptyText = (TextView)findViewById(android.R.id.empty);
 
         Intent intencja = new Intent(getApplicationContext(),HttpService.class);
         PendingIntent pendingResult = createPendingResult(HttpService.GAMES_LIST, new Intent(),0);
@@ -124,18 +133,23 @@ public class GamesList extends AppCompatActivity {
 
             SwipeRefreshLayout swipeLayout = ( SwipeRefreshLayout ) findViewById( R.id.swipe_container );
             swipeLayout.setRefreshing( false );
+
+
             try {
                 JSONObject response = new JSONObject( data.getStringExtra( HttpService.RESPONSE ) );
+
                 if ( response.getInt( "games_count" ) > 0 ) {
                     TextView no_game = ( TextView ) findViewById( R.id.empty );
                     no_game.setVisibility( View.GONE );
 
                     JSONArray games = new JSONArray( response.getString( "games" ) );
                     ArrayList<String> items = new ArrayList<String>();
+
                     for ( int i = 0; i < response.getInt( "games_count" ); i++ ) {
                         JSONObject game = games.getJSONObject( i );
                         items.add( "ID: " + game.getString( "id" ) );
                     }
+
                     ArrayAdapter<String> gamesAdapter = new ArrayAdapter<String>( this, android.R.layout.simple_list_item_1, items );
                     ListView list = ( ListView ) findViewById( R.id.listView );
                     list.setAdapter( gamesAdapter );
@@ -150,8 +164,10 @@ public class GamesList extends AppCompatActivity {
 
             if(game==R.id.inRow) {  //Sprawdź jaka gra została wybrana
                 Intent intencja = new Intent(getApplicationContext(), inRow.class);
+
                 try {
                     JSONObject response = new JSONObject(data.getStringExtra(HttpService.RESPONSE));
+
                     intencja.putExtra(inRow.GAME_ID, response.getInt("id"));
 
                     if (response.getInt("status") == 0 && response.getInt("player1") == 2) {
