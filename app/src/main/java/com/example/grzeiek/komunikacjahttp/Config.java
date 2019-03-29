@@ -111,6 +111,7 @@ public class Config extends SQLiteOpenHelper {
 //    Dodaj metodę onUpgrade wywoływaną przy modyfikacji bazy danych
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+//        db.delete( "config", null, null );
         db.execSQL( "DROP TABLE IF EXISTS config" );
         onCreate( db );
     }

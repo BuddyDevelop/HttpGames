@@ -61,6 +61,9 @@ public class GamesList extends AppCompatActivity {
                         break;
                     default:
                         //TODO -when gamer choose TicTacToe Game
+                        intencja = new Intent( getApplicationContext(), ticTac.class );
+                        intencja.putExtra( ticTac.STATUS, ticTac.NEW_GAME );
+                        intencja.putExtra( ticTac.MOVES, "" );
                         break;
                 }
                 startActivity( intencja );
@@ -86,7 +89,7 @@ public class GamesList extends AppCompatActivity {
                     intencja.putExtra( HttpService.URL, HttpService.LINES + game_id );  //W zależności od wybranej przez gracza gry ustaw parametr
                 }
                 else{
-                    //TODO -geting ticTacToe games list
+                    intencja.putExtra( HttpService.URL, HttpService.XO + game_id );
                 }
                 intencja.putExtra(HttpService.METHOD, HttpService.GET);
                 intencja.putExtra(HttpService.RETURN, pendingResult);
@@ -114,6 +117,7 @@ public class GamesList extends AppCompatActivity {
             intencja.putExtra(HttpService.URL, HttpService.LINES);
         }
         else {
+            intencja.putExtra(HttpService.URL, HttpService.XO);
             //TODO -geting ticTacToe games list
         }
 
@@ -183,7 +187,8 @@ public class GamesList extends AppCompatActivity {
                         intencja.putExtra(inRow.STATUS, inRow.WAIT);
 
                     intencja.putExtra(inRow.PLAYER, response.getInt("player1"));
-                    intencja.putExtra(inRow.MOVES, response.getString("moves"));startActivity(intencja);
+                    intencja.putExtra(inRow.MOVES, response.getString("moves"));
+                    startActivity(intencja);
                 }
                 catch (Exception ex) {
                     ex.printStackTrace();
@@ -191,6 +196,33 @@ public class GamesList extends AppCompatActivity {
             }
             else if(game==R.id.ticTac) {
                 //TODO -start chosen game for TicTacToe
+                Intent intencja = new Intent(getApplicationContext(), ticTac.class);
+
+                try {
+                    JSONObject response = new JSONObject(data.getStringExtra(HttpService.RESPONSE));
+
+                    intencja.putExtra(inRow.GAME_ID, response.getInt("id"));
+
+                    if (response.getInt("status") == 0 && response.getInt("player1") == 2) {
+                        intencja.putExtra(ticTac.STATUS, ticTac.YOUR_TURN);
+                    }
+                    else if (response.getInt("status") == 1 && response.getInt("player1") == 1) {
+                        intencja.putExtra(ticTac.STATUS, ticTac.YOUR_TURN);
+                    }
+                    else if (response.getInt("status") == 2 && response.getInt("player1") == 2) {
+                        intencja.putExtra(ticTac.STATUS, ticTac.YOUR_TURN);
+                    }
+                    else
+                        intencja.putExtra(ticTac.STATUS, ticTac.WAIT);
+
+                    intencja.putExtra(ticTac.PLAYER, response.getInt("player1"));
+                    intencja.putExtra(ticTac.MOVES, response.getString("moves"));
+                    startActivity(intencja);
+                }
+                catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+
             }
         }
     }

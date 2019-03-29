@@ -24,7 +24,9 @@
             android:name=".GamesList"
             android:label="@string/title_activity_games_list"
             android:theme="@style/AppTheme.NoActionBar" />
+
         <activity android:name=".inRow" />
+        <activity android:name=".ticTac" />
 
         <service
             android:name=".HttpService"
